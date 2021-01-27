@@ -1,6 +1,9 @@
+from random import random, randint
+
 from graphviz import Graph
 
-inp = "./Input/"
+inp = "./Input/Graph0.dat"
+out = "Graph"
 prof_count = 9
 exp_count = 8
 
@@ -11,19 +14,24 @@ def loadData(fName):
         # This is just a nifty python thing that lets us avoid exceptions
         lines = f.readlines()  # Reads every line into a list
         samp = 0
+        lines.__delitem__(0)
         for line in lines:
-            data.append(line.split())
+            line = line.rstrip()
+            line = line.split("\t")
+            from_node = line[0]
+            for to_node in line[1:]:
+                data.append([from_node, to_node, randint(1, 5)])
     return data
 
 
 def makeGraph():
-    exp_strs = ['SIR', 'SIIR']
-    for exp_str in exp_strs:
-        for prof in range(1, prof_count + 1):
-            for exp in range(1, exp_count + 1):
-                outName = exp_str + 'graphP' + str(prof) + 'E' + str(exp)
+    # exp_strs = ['SIR', 'SIIR']
+    # for exp_str in exp_strs:
+        # for prof in range(1, prof_count + 1):
+        #     for exp in range(1, exp_count + 1):
+                outName = out
                 g = Graph(engine='sfdp')
-                data = loadData(inp + exp_str + 'graphP' + str(prof) + 'E' + str(exp) + '.txt')
+                data = loadData(inp)
                 g.attr(overlap='false')
                 g.node_attr.update(fixedsize='true', fontsize='12', width='0.5', height='0.5', style='filled')
 
@@ -43,10 +51,9 @@ def makeGraph():
 
                 for d in data:
                     if d[0] >= d[1]:
-                        g.edge(d[0], d[1], weight=0.5)
+                        g.edge(str(d[0]), str(d[1]), penwidth=str(d[2]),weight=str(d[2]), xlabel=str(d[2]))
 
-                g.render(filename=outName, directory='Output/' + str(exp_str) + '/Profile ' + str(prof), cleanup=True,
-                         format='png')
+                g.render(filename=outName, directory='Output/', cleanup=True, format='png')
 
 
 
