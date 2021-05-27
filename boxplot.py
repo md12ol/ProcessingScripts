@@ -64,26 +64,6 @@ def main(exp_label, ps_count, samps):
 
     fig.savefig('./Output/boxplot' + str(exp_label) + '.png')
 
-    f = open('./Output/table' + str(exp_label) + '.txt', 'w')
-    for r in range(int(ps_count)):
-        if data[r]!=[]:
-            mean = float(np.mean(data[r]))
-            std = float(np.std(data[r], ddof=0))
-            std = round(std, 4)  # Population standard deviation
-            diff = 1.96 * std / math.sqrt(30)  # 95% CI
-            diff = round(diff, 4)
-            mean = round(mean, 4)
-            m = round(max(data[r]), 4)
-        else:
-            mean = 0
-            std = 0
-            diff = 0
-            m = 0
-
-        f.write(str(r + 1) + '\t' + str(mean) + '\t' + str(mean) + '\u00B1' + str(diff) + '\t' + str(std) + '\t' +
-                str(m) + '\n')
-    f.close()
-
 
 # Command line calls
 main(sys.argv[1], int(sys.argv[2]), int(sys.argv[3]))
