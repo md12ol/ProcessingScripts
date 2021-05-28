@@ -18,6 +18,8 @@ def getData(dir_path: str, pnum: int):
         lines = f.readlines()
         for line in lines:
             data.append(int(line))
+            pass
+        pass
     return data
 
 

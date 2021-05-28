@@ -1,4 +1,4 @@
-from random import random, randint
+from random import randint
 
 from graphviz import Graph
 
@@ -25,40 +25,49 @@ def loadData(fName):
             from_node = line[0]
             for to_node in line[1:]:
                 data.append([from_node, to_node, randint(1, 5)])
+                pass
+            pass
+        pass
     return data
 
 
 def makeGraph():
     # exp_strs = ['SIR', 'SIIR']
     # for exp_str in exp_strs:
-        # for prof in range(1, prof_count + 1):
-        #     for exp in range(1, exp_count + 1):
-                outName = out
-                g = Graph(engine='sfdp')
-                data = loadData(inp)
-                g.attr(overlap='false')
-                g.node_attr.update(fixedsize='true', fontsize='12', width='0.5', height='0.5', style='filled')
+    # for prof in range(1, prof_count + 1):
+    #     for exp in range(1, exp_count + 1):
+    outName = out
+    g = Graph(engine='sfdp')
+    data = loadData(inp)
+    g.attr(overlap='false')
+    g.node_attr.update(fixedsize='true', fontsize='12', width='0.5', height='0.5', style='filled')
 
-                g.node_attr.update(fillcolor='red')
-                g.node('0')
-                for n in range(1,32):
-                    g.node(str(n), fillcolor='cyan')
+    g.node_attr.update(fillcolor='red')
+    g.node('0')
+    for n in range(1, 32):
+        g.node(str(n), fillcolor='cyan')
+        pass
 
-                for n in range(32,64):
-                    g.node(str(n), fillcolor='orange')
+    for n in range(32, 64):
+        g.node(str(n), fillcolor='orange')
+        pass
 
-                for n in range(64,96):
-                    g.node(str(n), fillcolor='yellow')
+    for n in range(64, 96):
+        g.node(str(n), fillcolor='yellow')
+        pass
 
-                for n in range(96,128):
-                    g.node(str(n), fillcolor='green')
+    for n in range(96, 128):
+        g.node(str(n), fillcolor='green')
+        pass
 
-                for d in data:
-                    if d[0] >= d[1]:
-                        g.edge(str(d[0]), str(d[1]), penwidth=str(d[2]),weight=str(d[2]), xlabel=str(d[2]))
+    for d in data:
+        if d[0] >= d[1]:
+            g.edge(str(d[0]), str(d[1]), penwidth=str(d[2]), weight=str(d[2]), xlabel=str(d[2]))
+            pass
+        pass
 
-                g.render(filename=outName, directory='Output/', cleanup=True, format='png')
-
+    g.render(filename=outName, directory='Output/', cleanup=True, format='png')
+    pass
 
 
 def main():
@@ -67,4 +76,3 @@ def main():
 
 
 main()
-

@@ -1,16 +1,13 @@
-import re
-import sys
-import os
 import math
+import re
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
-from os import path
 
 """
 Processes folders of output in the form "Output - [Profile Number] w [States], [Population Size], [Mutations]" to 
-create boxplots, tables, and information about the best parameter settings.
+create boxplots, tables, fitness files, and information about the best parameter settings.
 """
 
 inp = "./Input/"
@@ -29,9 +26,13 @@ def getFits(dir_path: str, ascending: bool):
         for line in lines:
             if line.__contains__(str("fitness")):
                 data.append(float(re.findall("\d+\.\d+", line)[0]))
+                pass
+            pass
+        pass
     data.sort()  # Ascending
     if not ascending:
         data.reverse()
+        pass
     return data
 
 
@@ -44,8 +45,10 @@ def writeStat(data: [], out):
     diff = round(diff, precision)
     if lower_better:
         maxima = float(min(data))
+        pass
     else:
         maxima = float(max(data))
+        pass
     maxima = round(maxima, precision)
     out.write(str(mean).ljust(col_width))
     out.write(str(std).ljust(col_width))
@@ -58,6 +61,7 @@ def toFile(data: [], exp: int):
     out = open(outp + "EXP" + str(exp) + ".dat", "w")
     for d in data:
         out.write(str(d) + "\n")
+        pass
     out.close()
     pass
 
@@ -76,6 +80,8 @@ def main():
     for pridx, pr_dat in enumerate(profs):
         for bstr in base_dir_strs:
             base_data[pridx].append(getFits(f_root + bstr + str(pr_dat) + "/", True))
+            pass
+        pass
 
     # Create data[profile][states][popsize][mutations] = 30 fitness vals
     data = [[] for _ in range(len(profs))]
@@ -95,6 +101,10 @@ def main():
                 for midx, m in enumerate(muts):
                     folder = f_pop + str(m) + "M/"
                     data[pridx][stidx][poidx][midx] = getFits(folder, lower_better)
+                    pass
+                pass
+            pass
+        pass
 
     # Process the data and make tables
     col_ws = [6, 5, 7, 4]
@@ -109,8 +119,10 @@ def main():
             for _ in range(1, 4):
                 tables[pridx].write("NA".ljust(col_ws[col_idx]))
                 col_idx += 1
+                pass
             writeStat(base_data[pridx][bidx], tables[pridx])
             tables[pridx].write("\n")
+            pass
         col_idx = 0
         pr_info = str("P" + str(profs[pridx])).ljust(col_ws[col_idx])
         for stidx, s_dat in enumerate(pr_dat):
@@ -124,19 +136,27 @@ def main():
                     all_info = po_info + str(str(muts[midx]) + "M").ljust(col_ws[col_idx])
                     tables[pridx].write(all_info)
                     vals = writeStat(dat, tables[pridx])
+                    assert len(dat) == samps
                     toFile(dat, exp)
                     exp += 1
                     means[pridx].append([vals[0], [pridx, stidx, poidx, midx]])
                     bests[pridx].append([vals[1], [pridx, stidx, poidx, midx]])
                     tables[pridx].write("\n")
+                    pass
+                pass
+            pass
+        pass
 
     for f in tables:
         f.close()
+        pass
 
     for li in means:
         li.sort(key=itemgetter(0))
+        pass
     for li in bests:
         li.sort(key=itemgetter(0))
+        pass
 
     out = open(outp + "best.dat", "w")
     for idx in range(len(profs)):
@@ -152,6 +172,7 @@ def main():
         out.write("Population: " + str(pops[bests[idx][0][1][2]]) + "\n")
         out.write("Mutations: " + str(muts[bests[idx][0][1][3]]) + "\n")
         out.write("\n")
+        pass
     out.close()
 
     all_data = [[] for _ in range(len(profs))]
@@ -160,11 +181,16 @@ def main():
         for bidx in range(len(base_lbls)):
             all_data[pridx].append(base_data[pridx][bidx])
             x_labels[pridx].append(base_lbls[bidx] + " Baseline")
+            pass
         for stidx, st in enumerate(states):
             for poidx, p in enumerate(pops):
                 for midx, m in enumerate(muts):
                     all_data[pridx].append(data[pridx][stidx][poidx][midx])
                     x_labels[pridx].append("S=" + str(st) + " P=" + str(p) + " M=" + str(m))
+                    pass
+                pass
+            pass
+        pass
 
     fig_root = outp + "boxplot_P"
     plt.rc('xtick', labelsize=7)
@@ -181,7 +207,8 @@ def main():
         plts[idx].set_ylabel("Profile Matching Fitness")
         figs[idx].tight_layout()
         figs[idx].savefig(fig_root + str(profs[idx]) + ".png")
-    return 0
+        pass
+    pass
 
 
 main()
