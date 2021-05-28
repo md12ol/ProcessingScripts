@@ -2,6 +2,10 @@ from random import random, randint
 
 from graphviz import Graph
 
+"""
+Takes in files representing the adjacency lists of networks and creates visualizations of the networks.
+"""
+
 inp = "./Input/Graph0.dat"
 out = "Graph"
 prof_count = 9

@@ -9,7 +9,8 @@ import numpy as np
 from os import path
 
 """
-
+Processes folders of output in the form "Output - [Profile Number] w [States], [Population Size], [Mutations]" to 
+create boxplots, tables, and information about the best parameter settings.
 """
 
 inp = "./Input/"
@@ -53,6 +54,14 @@ def writeStat(data: [], out):
     return mean, maxima
 
 
+def toFile(data: [], exp: int):
+    out = open(outp + "EXP" + str(exp) + ".dat", "w")
+    for d in data:
+        out.write(str(d) + "\n")
+    out.close()
+    pass
+
+
 def main():
     profs = [1, 7]
     states = [8, 12, 16]
@@ -91,6 +100,7 @@ def main():
     col_ws = [6, 5, 7, 4]
     means = [[] for _ in range(len(profs))]
     bests = [[] for _ in range(len(profs))]
+    exp = 1
     for pridx, pr_dat in enumerate(data):
         for bidx in range(len(base_dir_strs)):
             col_idx = 0
@@ -114,6 +124,8 @@ def main():
                     all_info = po_info + str(str(muts[midx]) + "M").ljust(col_ws[col_idx])
                     tables[pridx].write(all_info)
                     vals = writeStat(dat, tables[pridx])
+                    toFile(dat, exp)
+                    exp += 1
                     means[pridx].append([vals[0], [pridx, stidx, poidx, midx]])
                     bests[pridx].append([vals[1], [pridx, stidx, poidx, midx]])
                     tables[pridx].write("\n")
@@ -172,11 +184,4 @@ def main():
     return 0
 
 
-# Command line call
 main()
-
-# Run line:
-# Experiment Number
-# Num of PSs
-# Samples per PS
-# python make_data.py 1 29 30

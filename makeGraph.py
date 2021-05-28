@@ -1,5 +1,5 @@
 """
-Makes the edge data (linked list rep) file to create the graph
+Makes the edge data (linked list rep) file to create the graph visualizations.
 """
 
 
