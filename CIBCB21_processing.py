@@ -1,5 +1,6 @@
 import math
 import re
+import string
 from operator import itemgetter
 
 import matplotlib.pyplot as plt
@@ -57,8 +58,8 @@ def writeStat(data: [], out):
     return mean, maxima
 
 
-def toFile(data: [], exp: int):
-    out = open(outp + "EXP" + str(exp) + ".dat", "w")
+def toFile(data: [], fname: string, exp: int):
+    out = open(outp + fname + str(exp) + ".dat", "w")
     for d in data:
         out.write(str(d) + "\n")
         pass
@@ -122,6 +123,7 @@ def main():
                 pass
             writeStat(base_data[pridx][bidx], tables[pridx])
             tables[pridx].write("\n")
+            toFile(base_data[pridx][bidx], "BASE" + str(profs[pridx]) + "_", bidx - 1)
             pass
         col_idx = 0
         pr_info = str("P" + str(profs[pridx])).ljust(col_ws[col_idx])
@@ -137,7 +139,7 @@ def main():
                     tables[pridx].write(all_info)
                     vals = writeStat(dat, tables[pridx])
                     assert len(dat) == samps
-                    toFile(dat, exp)
+                    toFile(dat, "EXP", exp)
                     exp += 1
                     means[pridx].append([vals[0], [pridx, stidx, poidx, midx]])
                     bests[pridx].append([vals[1], [pridx, stidx, poidx, midx]])
@@ -193,19 +195,38 @@ def main():
         pass
 
     fig_root = outp + "boxplot_P"
-    plt.rc('xtick', labelsize=7)
-    plt.rc('ytick', labelsize=7)
+    fig_titles = ["Unimodal Profile", "Bimodal Profile"]
+    plt.rc('xtick', labelsize=6)
+    plt.rc('ytick', labelsize=6)
 
     figs = [plt.figure() for _ in range(len(profs))]
+    for f in figs:
+        f.set_dpi(500)
+        f.set_figheight(3)
+
     plts = [figs[idx].add_subplot(111) for idx in range(len(profs))]
 
     for idx in range(len(all_data)):
         plts[idx].boxplot(all_data[idx])
-        plts[idx].set_xticklabels(x_labels[idx], rotation=90)
-        figs[idx].suptitle("Profile " + str(idx + 1))
-        plts[idx].set_xlabel("Parameter Setting")
-        plts[idx].set_ylabel("Profile Matching Fitness")
-        figs[idx].tight_layout()
+        plts[idx].set_xticklabels(x_labels[idx], rotation=90, va='bottom')
+        if idx == 0:
+            for xl in plts[idx].xaxis.get_majorticklabels()[:2]:
+                xl.set_va('top')
+                xl.set_y(1)
+            for xl in plts[idx].xaxis.get_majorticklabels()[2:]:
+                xl.set_y(0.05)
+        else:
+            for xl in plts[idx].xaxis.get_majorticklabels()[:1]:
+                xl.set_va('top')
+                xl.set_y(1)
+            for xl in plts[idx].xaxis.get_majorticklabels()[1:]:
+                xl.set_y(0.05)
+
+        figs[idx].suptitle(fig_titles[idx], fontsize=12)
+        plts[idx].set_xlabel("Parameter Setting (S=states, P=population, M=max. mutations)", fontsize=10)
+        plts[idx].set_ylabel("Distribution of RMS Error", fontsize=10)
+        # figs[idx].tight_layout()
+        figs[idx].subplots_adjust(left=.08, bottom=.1, right=.98, top=.91, wspace=0, hspace=0)
         figs[idx].savefig(fig_root + str(profs[idx]) + ".png")
         pass
     pass

@@ -1,4 +1,4 @@
-from random import randint
+import math
 
 from graphviz import Graph
 
@@ -6,25 +6,22 @@ from graphviz import Graph
 Takes in files representing the adjacency lists of networks and creates visualizations of the networks.
 """
 
-inp = "./Input/Graph0.dat"
-out = "Graph"
-prof_count = 9
-exp_count = 8
+out_root = "./Output/"
+inp_root = "./Input/"
+verts = 160
+edge_w = "1"
 
 
 def loadData(fName):
     data = []
     with open(fName) as f:
-        # This is just a nifty python thing that lets us avoid exceptions
-        lines = f.readlines()  # Reads every line into a list
-        samp = 0
+        lines = f.readlines()
         lines.__delitem__(0)
-        for line in lines:
+        for from_node, line in enumerate(lines):
             line = line.rstrip()
-            line = line.split("\t")
-            from_node = line[0]
-            for to_node in line[1:]:
-                data.append([from_node, to_node, randint(1, 5)])
+            line = line.split(" ")
+            for to_node in line:
+                data.append([from_node, int(to_node)])
                 pass
             pass
         pass
@@ -32,41 +29,65 @@ def loadData(fName):
 
 
 def makeGraph():
-    # exp_strs = ['SIR', 'SIIR']
-    # for exp_str in exp_strs:
-    # for prof in range(1, prof_count + 1):
-    #     for exp in range(1, exp_count + 1):
-    outName = out
-    g = Graph(engine='sfdp')
-    data = loadData(inp)
-    g.attr(overlap='false')
-    g.node_attr.update(fixedsize='true', fontsize='12', width='0.5', height='0.5', style='filled')
+    graph_root = "initGraph_"
+    exp_strs = ["Ring", "PLC"]
+    theta_diff = 2 * math.pi / (verts / 2)
+    inside_offset = theta_diff / 2
+    radius = [3, 2.5]
 
-    g.node_attr.update(fillcolor='red')
-    g.node('0')
-    for n in range(1, 32):
-        g.node(str(n), fillcolor='cyan')
-        pass
+    for sidx, estr in enumerate(exp_strs):
+        inp_file = inp_root + graph_root + estr + ".dat"
+        out_file = graph_root + estr
+        data = loadData(inp_file)
 
-    for n in range(32, 64):
-        g.node(str(n), fillcolor='orange')
-        pass
-
-    for n in range(64, 96):
-        g.node(str(n), fillcolor='yellow')
-        pass
-
-    for n in range(96, 128):
-        g.node(str(n), fillcolor='green')
-        pass
-
-    for d in data:
-        if d[0] >= d[1]:
-            g.edge(str(d[0]), str(d[1]), penwidth=str(d[2]), weight=str(d[2]), xlabel=str(d[2]))
+        if sidx == 0:
+            g = Graph(engine='neato')
+            g.attr(size="5,5")
+            g.graph_attr.update(dpi='600')
+            g.node_attr.update(fixedsize='true', width='0.1', shape='point', fillcolor='white', pin='true')
+            g.edge_attr.update(weight=edge_w)
+            outer = 0
+            theta = 0
+            for n in range(verts):
+                x_val = radius[outer] * math.cos(theta)
+                y_val = radius[outer] * math.sin(theta)
+                pos = str(x_val) + "," + str(y_val) + "!"
+                g.node(str(n), pos=pos)
+                outer = (outer + 1) % 2
+                theta += inside_offset
+                pass
             pass
-        pass
+        else:
+            g = Graph(engine='sfdp')
+            g.attr(size="7,7")
+            g.graph_attr.update(dpi='600', K='0.55', ratio='1', splines='true', overlap='false')
+            g.node_attr.update(fixedsize='true', shape='point', fillcolor='white', width='0.075')
+            g.edge_attr.update(weight=edge_w)
+            for n in range(verts):
+                g.node(str(n))
+                pass
+            pass
 
-    g.render(filename=outName, directory='Output/', cleanup=True, format='png')
+        # for n in range(32, 64):
+        #     g.node(str(n), fillcolor='orange')
+        #     pass
+        #
+        # for n in range(64, 96):
+        #     g.node(str(n), fillcolor='yellow')
+        #     pass
+        #
+        # for n in range(96, 128):
+        #     g.node(str(n), fillcolor='green')
+        #     pass
+
+        for d in data:
+            if d[0] >= d[1]:
+                g.edge(str(d[0]), str(d[1]), penwidth=str(edge_w))
+                pass
+            pass
+
+        g.render(filename=out_file, directory='Output/', cleanup=True, format='png')
+        pass
     pass
 
 
