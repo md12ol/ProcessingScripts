@@ -46,14 +46,8 @@ def makeGraph(file_in: str, dir: str, fnum: int):
     for n in range(verts):
         if n == 0:
             g.node(str(n), label=str(n), fillcolor='red')
-        elif n < verts / 4:
-            g.node(str(n), label=str(n), fillcolor='cyan')
-        elif n < verts / 2:
-            g.node(str(n), label=str(n), fillcolor='orange')
-        elif n < 3 * verts / 4:
-            g.node(str(n), label=str(n), fillcolor='yellow')
         else:
-            g.node(str(n), label=str(n), fillcolor='green')
+            g.node(str(n), label=str(n), fillcolor='white')
 
     for d in data:
         if int(d[0]) >= int(d[1]):
@@ -75,7 +69,7 @@ def main():
             val = re.search("\\d+", val).group(0)
             makeGraph(inp_root + dire + "/" + "Graph" + str(val) + ".dat", out_root, didx)
             pass
-        print(str(didx) + "DONE")
+        print(str(dire) + " DONE")
     # inp_file = inp_root + "exp3/Graph0.dat"
     # out_folder = out_root
     # makeGraph(inp_file, out_folder, 3)
