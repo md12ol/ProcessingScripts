@@ -1,5 +1,3 @@
-import math
-
 from graphviz import Graph
 
 """
@@ -8,7 +6,7 @@ Takes in files representing the adjacency lists of networks and creates visualiz
 
 out_root = "./Output/"
 inp_root = "./Input/"
-verts = 128
+verts = 512
 
 
 def loadData(fName):
@@ -18,7 +16,7 @@ def loadData(fName):
         lines.__delitem__(0)
         for from_node, line in enumerate(lines):
             line = line.rstrip()
-            line = line.split("\t")
+            line = line.split(" ")
             for to_node in line:
                 data.append([from_node, int(to_node)])
                 pass
@@ -28,17 +26,20 @@ def loadData(fName):
 
 
 def makeGraph():
-    inp_file = inp_root + "outGraph0.dat"
+    inp_file = "Output/EXP1_graph.dat"
     out_file = "outGraph0"
     data = loadData(inp_file)
 
     g = Graph(engine='sfdp')
-    # g.attr(size="5,5")
-    g.graph_attr.update(dpi='600', overlap='false')
-    g.node_attr.update()
-    g.edge_attr.update()
+    g.attr(size="8,8")
+    g.graph_attr.update(dpi='600')
+    g.node_attr.update(shape='point', width='0.01', height='0.01')
+    g.edge_attr.update(color='black', penwidth='0.2')
     for n in range(verts):
-        g.node(str(n), label=str(n))
+        if n == 0:
+            g.node(str(n), label=str(n), color='red')
+        else:
+            g.node(str(n), label=str(n))
         pass
 
     for d in data:
@@ -47,7 +48,7 @@ def makeGraph():
             pass
         pass
 
-    g.render(filename=out_file, directory='Output/', cleanup=True, format='png')
+    g.render(filename=out_file, directory='Output/', cleanup=False, format='png')
     pass
 
 
