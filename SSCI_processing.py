@@ -80,16 +80,15 @@ def write_stat(data: [], out1, out2):
     return mean, maxima
 
 
-def box_plot(data, locs, edge_color, fill_color):
-    bp = plt.boxplot(data, positions=locs, patch_artist=True)
-
+def box_plot(bp, edge_color, fill_color):
     for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
         plt.setp(bp[element], color=edge_color)
+        pass
 
     for patch in bp['boxes']:
         patch.set(facecolor=fill_color)
-
-    return bp
+        pass
+    pass
 
 
 def edge_list(filename):
@@ -266,8 +265,6 @@ def main():
         out.close()
         pass
 
-    d_locs = []
-    e_locs = []
     x_locs = []
     lbls = []
     count = 1
@@ -275,47 +272,69 @@ def main():
         for pi, p in enumerate(pops):
             for mi, m in enumerate(muts):
                 lbls.append("S=" + str(s) + " P=" + str(p) + " M=" + str(m))
-                d_locs.append(count)
-                e_locs.append(count + 1)
-                x_locs.append(count + 0.5)
+                x_locs.append(count)
                 count += 1
                 pass
             pass
         pass
-
+    graphs = ["graph1.dat", "graph2.dat", "graph3.dat"]
     for gi, g in enumerate(graphs):
-        fig_root = outp + "boxplot_G" + str(g)
+        # fig_root = outp + "boxplot_G" + str(g)
+        fig_root = outp + g
         plt.rc('xtick', labelsize=6)
         plt.rc('ytick', labelsize=6)
 
-        f = plt.figure()
+        f, bg1 = plt.subplots()
         f.set_dpi(500)
         f.set_figheight(5)
 
-        plot = f.subplots()
-        # bp1 = box_plot(data_1d[gi][0], d_locs, 'red', 'tan')
-        # bp2 = box_plot(data_1d[gi][1], d_locs, 'blue', 'cyan')
-        # plot.legend([bp1["boxes"][0], bp2["boxes"][0]], ['Diameter', '# Edges'])
-        plot.boxplot(data_1d[gi][1])
-        plot.set_xticks(d_locs)
-        plot.set_xticklabels(lbls, rotation=90)
+        p1b = dict(color='red', facecolor='salmon')
+        p1 = dict(color='red')
+        p1f = dict(color='red', markeredgecolor='red', marker='+', markersize=5)
+        p1m = dict(color='darkred')
+        p2b = dict(color='blue', facecolor='royalblue')
+        p2 = dict(color='blue')
+        p2f = dict(color='blue', markeredgecolor='blue', marker='x', markersize=3)
+        p2m = dict(color='darkblue')
 
-        f.suptitle("Dungeon with Doors on Dungeon " + str(g), fontsize=12)
-        plot.set_xlabel("Parameter Setting (S=states, P=population, M=max. mutations)", fontsize=10)
-        plot.set_ylabel("Distribution of Fitness", fontsize=10)
+        ax1 = bg1.boxplot(data_1d[gi][0], positions=x_locs, patch_artist=True, zorder=2,
+                          boxprops=p1b, whiskerprops=p1, flierprops=p1f, medianprops=p1m,
+                          capprops=p1)
+
+        bg2 = bg1.twinx()
+        ax2 = bg2.boxplot(data_1d[gi][1], positions=x_locs, patch_artist=True, zorder=1,
+                          boxprops=p2b, whiskerprops=p2, flierprops=p2f, medianprops=p2m,
+                          capprops=p2)
+
+        bg1.legend([ax1["boxes"][0], ax2["boxes"][0]], ["Diameter", "Num. Edges"], loc='best')
+        bg1.set_xticks(x_locs)
+        bg1.set_xticklabels(lbls, rotation=90)
+
+        f.suptitle("Map with Doors on Map " + str(g), fontsize=12)
+        bg1.set_xlabel("Parameter Setting (S=states, P=population, M=max. mutations)", fontsize=10)
+        bg1.set_ylabel("Diameter", fontsize=10)
+        bg2.set_ylabel("Num. Edges", fontsize=10)
         f.tight_layout()
         # f.subplots_adjust(left=.08, bottom=.1, right=.98, top=.91, wspace=0, hspace=0)
         f.savefig(fig_root + ".png")
         pass
 
-    exp = 1
-    for gi, g in enumerate(graphs):
-        for g_in in gs[gi]:
-            el = edge_list(g_in)
-            make_graph(el, "EXP" + str(exp) + "_graph")
-            print("Graph (" + str(g) + ", " + str(exp) + ") printed.")
-            exp += 1
-            pass
+    # exp = 1
+    # for gi, g in enumerate(graphs):
+    #     for g_in in gs[gi]:
+    #         el = edge_list(g_in)
+    #         make_graph(el, "EXP" + str(exp) + "_graph")
+    #         print("Graph (" + str(g) + ", " + str(exp) + ") printed.")
+    #         exp += 1
+    #         pass
+    # exp = 1
+    # for gi, g in enumerate(graphs):
+    #     # for g_in in gs[gi]:
+    #         el = edge_list(inp + g)
+    #         make_graph(el, "O" + str(exp) + "_graph")
+    #         print("Graph (" + str(g) + ", " + str(exp) + ") printed.")
+    #         exp += 1
+    #         pass
 
     breakpoint = "yes"
     print("Script Complete.")
