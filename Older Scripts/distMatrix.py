@@ -1,6 +1,5 @@
-import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
 
 """
 This script gathers data and creates the dist matrix (CIBCB 2020)
