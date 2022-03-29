@@ -58,8 +58,8 @@ def main():
     for idx, si in enumerate(sizes):
         out_root = outp + str(si) + "N_graph"
         for g in range(keep_n):
-            output = out_root + str(g) + ".dat"
-            print(data[idx][g][0] + 1)
+            output = out_root + "Run" + str(data[idx][g][0]) + "_" + str(g + 1) + "Place.dat"
+            print(data[idx][g][0])
             with open(output, "w") as f:
                 for line in data[idx][g][2]:
                     f.write(line)
