@@ -85,6 +85,7 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
             g.node(str(n), label=str(n))
         pass
 
+    ew_count = 0
     for idx, d in enumerate(el):
         if d[0] < d[1]:
             if ec[idx] == 1:
@@ -105,10 +106,12 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
 
             # g.edge(str(d[0]), str(d[1]), penwidth=str(pw * ec[idx]))
             e_cout += 1
+            ew_count += ec[idx]
             pass
         pass
 
     print(e_cout)
+    print(ew_count)
     g.render(filename=out_file, directory=outp, cleanup=True, format='png')
     # g.save(filename=out_file, directory=outp, cleanup=True, format='png')
     pass
@@ -116,10 +119,11 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
 
 def main():
     # nodes = [256, 512, 768, 1024]
-    nodes = [1024]
+    nodes = [256]
     for n in nodes:
         for i in range(3):
-            finame = str(n) + "N_graph" + str(i)
+            # finame = str(n) + "N"
+            finame = "thing"
             el, ec = edge_list("Output/" + finame + ".dat")
             low_deg, high_deg = high_low_deg(el, n)
             make_graph(el, ec, low_deg, high_deg, finame, n)
