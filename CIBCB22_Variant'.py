@@ -3,10 +3,11 @@ from operator import itemgetter
 
 import matplotlib.pyplot as plt
 import numpy as np
+from graphviz import Graph
 
 inp = "./Input/"
 outp = "./Output/"
-finame = "best.lint"
+finame = "best"
 samps = 30
 lower_better = False
 precision = 6
@@ -20,9 +21,9 @@ def get_prof(line):
     p_id = pts_1[0].split('-')[0].strip()
     v_id = pts_1[0].split('>')[1].strip()
     info = v_id + " (" + p_id + ")"
-    start = int(pts_1[1][0:2])
+    start = int(pts_1[1][0:3])
     pts_1 = pts_1[1].split("-")
-    end = int(pts_1[1][0:2])
+    end = int(pts_1[1][0:3])
     line = pts[1][1:]
     line = line.rstrip("\n")
     n = 0
@@ -39,43 +40,75 @@ def get_prof(line):
 
 
 def get_dna(line):
-    line = line.rstrip("\n").split("\t")[1]
-    return line
+    line = line.rstrip("\n").split("\t")
+    prob = line[1].split("=")[1]
+    dna = line[2]
+    return prob, dna
+
+
+def get_hist(line):
+    line = line.rstrip("\n").split("\t")[1:-1]
+    hist = []
+    for v in line:
+        hist.append(int(v))
+        pass
+    return hist
 
 
 def get_data(dir_path: str):
     fits = []
     var_profs = []
     var_dnas = []
+    var_probs = []
     profiles = []
     dnas = []
+    probs = []
     edges = []
-    with open(dir_path + finame) as f:
-        lines = f.readlines()
-        next_graph = False
-        for line in lines:
-            if line.__contains__(str("-fitness")):
-                d = line.split(" ")
-                fits.append(float(d[0]))
-                pass
-            elif line.__contains__(str("[")):
-                var_profs.append(get_prof(line))
-                pass
-            elif line.__contains__(str("V")):
-                var_dnas.append(get_dna(line))
-                pass
-            elif line.__contains__(str("Graph")):
-                profiles.append(var_profs)
-                var_profs = []
-                dnas.append(var_dnas)
-                var_dnas = []
-                next_graph = True
-                pass
-            elif next_graph:
-                next_graph = False
-                edges.append(int(line.rstrip("\n").split("\t")[-1]))
+    hists = []
+    networks = []
+    for idx in range(samps):
+        fi_str = finame + str(idx).zfill(2) + ".dat"
+        with open(dir_path + fi_str) as f:
+            lines = f.readlines()
+            next_graph = False
+            next_network = False
+            network = []
+            for line in lines:
+                if line.__contains__(str("-fitness")):
+                    d = line.split(" ")
+                    fits.append(float(d[0]))
+                    pass
+                elif line.__contains__(str("[")):
+                    var_profs.append(get_prof(line))
+                    pass
+                elif line.__contains__(str("V")):
+                    prob, dna = get_dna(line)
+                    var_dnas.append(dna)
+                    var_probs.append(prob)
+                    pass
+                elif line.__contains__(str("HIST")):
+                    hists.append(get_hist(line))
+                    pass
+                elif line.__contains__(str("Graph")):
+                    profiles.append(var_profs)
+                    var_profs = []
+                    dnas.append(var_dnas)
+                    var_dnas = []
+                    probs.append(var_probs)
+                    var_probs = []
+                    next_graph = True
+                    pass
+                elif next_graph:
+                    next_graph = False
+                    edges.append(int(line.rstrip("\n").split("\t")[-1]))
+                    next_network = True
+                    pass
+                elif next_network:
+                    network.append(line)
+                    pass
                 pass
             pass
+        networks.append(network)
         pass
     # run number, fitness, profileS, dnaS, edge count
     if len(fits) != samps:
@@ -90,7 +123,16 @@ def get_data(dir_path: str):
     if len(edges) != samps:
         print("ERROR in edges: " + dir_path)
         pass
-    data = [[i, fits[i], profiles[i], dnas[i], edges[i]] for i in range(samps)]
+    if len(probs) != samps:
+        print("ERROR in probs: " + dir_path)
+        pass
+    if len(hists) != samps:
+        print("ERROR in hists: " + dir_path)
+        pass
+    if len(networks) != samps:
+        print("ERROR in networks: " + dir_path)
+        pass
+    data = [[i, fits[i], profiles[i], dnas[i], edges[i], probs[i], hists[i], networks[i]] for i in range(samps)]
     data.sort(key=itemgetter(1))  # Ascending
     if not lower_better:
         data.reverse()
@@ -170,7 +212,7 @@ def write_best(data: [], info: str, seed: str):
 
 
 def box_plot(bp, edge_color):
-    colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF00FF']
+    colors = ['#0000FF', '#00FF00', '#FFFF00']
     for whisker in bp['whiskers']:
         whisker.set(color='#8B008B', linewidth=1)
         pass
@@ -187,11 +229,7 @@ def box_plot(bp, edge_color):
         flier.set(marker='.', color='#e7298a', alpha=0.5, markersize=3)
 
     for idx, patch in enumerate(bp['boxes']):
-        if idx == 0:
-            patch.set(facecolor="black")
-        else:
-            patch.set(facecolor=colors[idx % len(colors)])
-            pass
+        patch.set(facecolor=colors[idx % len(colors)])
         pass
     pass
 
@@ -217,33 +255,127 @@ def calc(data):
     pass
 
 
+def high_low_deg(el: [], verts: int):
+    deg = [int(0) for _ in range(verts)]
+    low_deg = []
+    high_deg = []
+    for ed in el:
+        deg[ed[0]] += 1
+        deg[ed[1]] += 1
+        pass
+    max = 0
+    for idx, deg in enumerate(deg):
+        if deg > max:
+            max = deg
+            pass
+        if deg > 20:
+            high_deg.append(idx)
+            pass
+        elif deg > 10:
+            low_deg.append(idx)
+            pass
+        pass
+    print("Max: " + str(max))
+    return low_deg, high_deg
+
+
+def edge_list(lines):
+    el = []
+    lines.__delitem__(-1)
+    for from_node, line in enumerate(lines):
+        line = line.rstrip()
+        line = line.split("\t")
+        for to_node in line:
+            if to_node != '':
+                if [from_node, int(to_node)] not in el:
+                    if [int(to_node), from_node] not in el:
+                        el.append([from_node, int(to_node)])
+                        pass
+                    pass
+                pass
+            pass
+        pass
+
+    edge_lists = []
+    for d in el:
+        if d not in edge_lists:
+            edge_lists.append(d)
+            pass
+        pass
+    return edge_lists
+
+
+def make_graph(el: [], low_deg: [], high_deg: [], out_file: str, verts: int):
+    g = Graph(engine='sfdp')
+    e_cout = 0
+
+    g.graph_attr.update(dpi='1000', size="10,10", outputorder='edgesfirst', overlap='false', splines='true')
+    g.node_attr.update(color='black', shape='point', width='0.02', height='0.02')
+    g.edge_attr.update(color='black', penwidth='0.2')
+    for n in range(verts):
+        if n == 0:
+            if n in low_deg:
+                g.node(str(n), label=str(n), color='red', width='0.03', height='0.03')
+                pass
+            elif n in high_deg:
+                g.node(str(n), label=str(n), color='red', width='0.04', height='0.04')
+                pass
+            else:
+                g.node(str(n), label=str(n), color='red')
+                pass
+        elif n in low_deg:
+            g.node(str(n), label=str(n), width='0.03', height='0.03')
+        elif n in high_deg:
+            g.node(str(n), label=str(n), width='0.04', height='0.04')
+        else:
+            g.node(str(n), label=str(n))
+        pass
+
+    for idx, d in enumerate(el):
+        if d[0] < d[1]:
+            g.edge(str(d[0]), str(d[1]), color='black')
+            pass
+        e_cout += 1
+        pass
+    print("Edges: " + str(e_cout))
+    g.render(filename=out_file, directory=outp, cleanup=True, format='png')
+
+    # g.save(filename=out_file, directory=outp, format='png')
+    pass
+
+
 def main():
     print("START")
     folders = []
     mode = ["EL", "ES"]
-    inits = ["08", "16", "24", "32"]
-    probs = ["0.0025", "0.0050", "0.0075", "0.0100"]
-    edits = ["04-12", "12-20", "20-28", "28-36"]
+    alp_cng = ["0.05", "0.10", "0.15"]
+    inits = ["08", "16"]
+    probs = ["0.0100"]
+    edits = ["12-20", "20-28", "28-36"]
     folds = []
     x_lbl = []
     plt.style.use("seaborn-dark")
 
     for mi, m in enumerate(mode):
         idx = 1
-        m_root = inp + "Output - " + m
-        folds.append(m_root + " Base/")
-        m_root = m_root + " 050P, "
-        x_ls = ["0 (No Variants)"]
-        for ii, i in enumerate(inits):
-            i_root = m_root + i + "I, "
-            xli_root = str(int(i)) + ", "
-            for pi, p in enumerate(probs):
-                p_root = i_root + p + "%, "
-                xl = xli_root + str(format(float(p) * 100, '.2f')) + "%, "
-                for ei, e in enumerate(edits):
-                    folds.append(p_root + e + "E/")
-                    x_ls.append(str(idx) + " (" + xl + e + ")")
-                    idx += 1
+        m_root = inp + "Output - " + m + " "
+        # folds.append(m_root + " Base/")
+        # m_root = m_root + " 050P, "
+        # x_ls = ["0 (No Variants)"]
+        x_ls = []
+        for aci, ac in enumerate(alp_cng):
+            ac_root = m_root + ac + "C, "
+            xlac_root = ac + ", "
+            for ii, i in enumerate(inits):
+                i_root = ac_root + i + "I, "
+                xli_root = xlac_root + str(int(i)) + ", "
+                for pi, p in enumerate(probs):
+                    p_root = i_root + p + "%, "
+                    for ei, e in enumerate(edits):
+                        folds.append(p_root + e + "E/")
+                        x_ls.append(str(idx) + " (" + xli_root + e + ")")
+                        idx += 1
+                        pass
                     pass
                 pass
             pass
@@ -329,17 +461,17 @@ def main():
     xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
     ylb = ["Fitness", "Fitness", "Best Fitness", "Best Fitness", "Number of Edges", "Number of Edges",
            "Number of Variants", "Number of Variants"]
-    xlb = ["Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)"]
+    xlb = ["Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)",
+           "Experiment (Alpha Change, Initial Variant Bits, New Variant Edits)"]
 
-    lxpos = [0.5]
-    for i in range(4, len(all_data[0]) - 4, 4):
+    lxpos = []
+    for i in range(2, len(all_data[0]) - 3, 3):
         lxpos.append(i + 0.5)
         pass
 
@@ -408,8 +540,8 @@ def main():
             plot.set_ylim(0, y_max)
             plot.set_xlim(0, x_max)
 
-            f.suptitle(titles[fidx] + " Experiment " + str(didx) + " Best Epidemic Curve", fontsize=12)
-            sp_info = "Total Infections: " + str(best_inf) + '    '
+            f.suptitle(titles[fidx] + " Experiment " + str(didx + 1) + " Best Epidemic Curve", fontsize=12)
+            sp_info = "Total Infections: " + str(infs) + '    '
             sp_info += "Mean Infections: " + str(format(mean_inf, '.2f'))
             plot.text(plot.get_xlim()[1] / 2, plot.get_ylim()[1], sp_info, horizontalalignment='center',
                       verticalalignment='bottom', bbox=dict(fc='white', ec='none', pad=0), fontsize=10)
@@ -420,11 +552,79 @@ def main():
             plot.grid(visible="True", axis="x", which='major', color="black", linewidth=0.5)
             plot.grid(visible="True", axis="y", which='major', color="black", linewidth=0.5)
             plt.legend(title="Variant ID (Parent)", borderaxespad=0, bbox_to_anchor=(1, 0.5),
-                       loc="center left", fontsize=8, title_fontsize=8)
+                       loc="center left", fontsize=6, title_fontsize=6, ncol=2)
             f.tight_layout()
-            f.savefig(outp + mode[fidx] + "_EXP" + str(didx) + "_profile.png", dpi=600)
+            f.savefig(outp + mode[fidx] + "_EXP" + str(didx + 1) + "_profile.png", dpi=600)
             plt.close()
-            write_best(data, x_lbl[fidx][didx], outp + mode[fidx] + "_EXP" + str(didx) + "_best.dat")
+            write_best(data, x_lbl[fidx][didx], outp + mode[fidx] + "_EXP" + str(didx + 1) + "_best.dat")
+            pass
+        pass
+
+    plt.rc('xtick', labelsize=6)
+    plt.rc('ytick', labelsize=6)
+    for fidx, many_data in enumerate(all_data):
+        for didx, data in enumerate(many_data):
+            profs = data[0][2]
+            mean_inf, best_inf = inf_data(data)
+            f = plt.figure()
+            f.set_dpi(600)
+            f.set_figheight(4)
+            f.set_figwidth(8)
+
+            plot = f.add_subplot(111)
+
+            # xs = []
+            # ys = []
+            # infs = 0
+            # for prof in profs:
+            #     xs.append(prof[2])
+            #     ys.append([i for i in range(prof[0], prof[1] + 1)])
+            #     infs += prof[4]
+            #     pass
+
+            ys = data[0][6]
+            cont = True
+            idx = 127
+            while cont:
+                if ys[idx] == 0:
+                    ys = ys[0:-1]
+                    pass
+                else:
+                    cont = False
+                    pass
+                idx -= 1
+                pass
+
+            xs = [i for i in range(0, len(ys))]
+            x_lbl = [str(i) for i in xs]
+            plot.bar(xs, ys, label=x_lbl)
+
+            y_max = plot.get_ylim()[1]
+            x_max = plot.get_xlim()[1]
+            plot.set_ylim(0, y_max)
+            plot.set_xlim(0, x_max)
+
+            f.suptitle(titles[fidx] + " Experiment " + str(didx + 1) + " Best Epidemic Histogram", fontsize=12)
+            sp_info = "Total Infections: " + str(best_inf) + '    '
+            sp_info += "Mean Infections: " + str(format(mean_inf, '.2f'))
+            plot.text(plot.get_xlim()[1] / 2, plot.get_ylim()[1], sp_info, horizontalalignment='center',
+                      verticalalignment='bottom', bbox=dict(fc='white', ec='none', pad=0), fontsize=10)
+            plot.set_xlabel("Severity of Infection", fontsize=10)
+            plot.set_ylabel("Number of Infections", fontsize=10)
+            # plot.minorticks_on()
+            # plot.grid(visible="True", axis="x", which='minor', color="darkgray", linewidth=0.5)
+            # plot.grid(visible="True", axis="x", which='major', color="black", linewidth=0.5)
+            # plot.grid(visible="True", axis="y", which='major', color="black", linewidth=0.5)
+            # plt.legend(title="Variant ID (Parent)", borderaxespad=0, bbox_to_anchor=(1, 0.5),
+            #            loc="center left", fontsize=10, title_fontsize=10)
+            f.tight_layout()
+            f.savefig(outp + mode[fidx] + "_EXP" + str(didx + 1) + "_hist.png", dpi=600)
+            plt.close()
+            # write_best(data, x_lbl[fidx][didx], outp + mode[fidx] + "_EXP" + str(didx) + "_best.dat")
+            # print("From File: " + str(data[0][4]))
+            # el = edge_list(data[0][7])
+            # low_deg, high_deg = high_low_deg(el, 256)
+            # make_graph(el, low_deg, high_deg, mode[fidx] + "_EXP" + str(didx + 1) + "_graph", 256)
             pass
         pass
 

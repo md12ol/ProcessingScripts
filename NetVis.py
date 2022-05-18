@@ -24,7 +24,7 @@ def high_low_deg(el: [], verts: int):
             low_deg.append(idx)
             pass
         pass
-    print(max)
+    print("Max: " + str(max))
     return low_deg, high_deg
 
 
@@ -86,6 +86,7 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
         pass
 
     ew_count = 0
+    counts = [0 for _ in range(5)]
     for idx, d in enumerate(el):
         if d[0] < d[1]:
             if ec[idx] == 1:
@@ -107,28 +108,27 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
             # g.edge(str(d[0]), str(d[1]), penwidth=str(pw * ec[idx]))
             e_cout += 1
             ew_count += ec[idx]
+            counts[ec[idx] - 1] += 1
             pass
         pass
 
-    print(e_cout)
-    print(ew_count)
-    g.render(filename=out_file, directory=outp, cleanup=True, format='png')
-    # g.save(filename=out_file, directory=outp, cleanup=True, format='png')
+    print("Edges: " + str(e_cout))
+    print("Total Weights: " + str(ew_count))
+    print(counts)
+    # g.render(filename=out_file, directory=outp, cleanup=True, format='png')
+    # g.save(filename=out_file, directory=outp, format='png')
     pass
 
 
 def main():
     # nodes = [256, 512, 768, 1024]
-    nodes = [256]
-    for n in nodes:
-        for i in range(3):
-            # finame = str(n) + "N"
-            finame = "thing"
-            el, ec = edge_list("Output/" + finame + ".dat")
-            low_deg, high_deg = high_low_deg(el, n)
-            make_graph(el, ec, low_deg, high_deg, finame, n)
-            print("done 1")
-            pass
+    # nodes = [256]
+    finames = ["512N_graph3", "512N_graph3strictgen3rem50_599781graph", "512a_random50graph", "512a_random70graph"]
+    for fi in finames:
+        el, ec = edge_list("Input/" + fi + ".dat")
+        low_deg, high_deg = high_low_deg(el, 512)
+        make_graph(el, ec, low_deg, high_deg, fi, 512)
+        print("done 1")
         pass
     print("DONE")
     pass
