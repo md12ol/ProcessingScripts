@@ -1,8 +1,8 @@
 import math
-from operator import itemgetter
-
 import matplotlib.pyplot as plt
 import numpy as np
+from graphviz import Graph
+from operator import itemgetter
 
 inp = "./Input/"
 outp = "./Output/"
@@ -50,13 +50,19 @@ def get_data(dir_path: str):
     profiles = []
     dnas = []
     edges = []
+    networks = []
     with open(dir_path + finame) as f:
         lines = f.readlines()
         next_graph = False
+        next_network = False
+        network = []
         for line in lines:
             if line.__contains__(str("-fitness")):
                 d = line.split(" ")
                 fits.append(float(d[0]))
+                next_network = False
+                networks.append(network)
+                network = []
                 pass
             elif line.__contains__(str("[")):
                 var_profs.append(get_prof(line))
@@ -74,9 +80,18 @@ def get_data(dir_path: str):
             elif next_graph:
                 next_graph = False
                 edges.append(int(line.rstrip("\n").split("\t")[-1]))
+                next_network = True
+                pass
+            elif next_network:
+                network.append(line)
                 pass
             pass
+        next_network = False
+        networks.append(network)
+        network = []
         pass
+
+    networks = networks[1:]
     # run number, fitness, profileS, dnaS, edge count
     if len(fits) != samps:
         print("ERROR in fits: " + dir_path)
@@ -90,7 +105,10 @@ def get_data(dir_path: str):
     if len(edges) != samps:
         print("ERROR in edges: " + dir_path)
         pass
-    data = [[i, fits[i], profiles[i], dnas[i], edges[i]] for i in range(samps)]
+    if len(networks) != samps:
+        print("ERROR in networks: " + dir_path)
+        pass
+    data = [[i, fits[i], profiles[i], dnas[i], edges[i], networks[i]] for i in range(samps)]
     data.sort(key=itemgetter(1))  # Ascending
     if not lower_better:
         data.reverse()
@@ -170,7 +188,8 @@ def write_best(data: [], info: str, seed: str):
 
 
 def box_plot(bp, edge_color):
-    colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF00FF']
+    # colors = ['#0000FF', '#00FF00', '#FFFF00', '#FF00FF']
+    colors = ['#0000FF', '#00FF00', '#FFFF00']
     for whisker in bp['whiskers']:
         whisker.set(color='#8B008B', linewidth=1)
         pass
@@ -185,6 +204,7 @@ def box_plot(bp, edge_color):
 
     for flier in bp['fliers']:
         flier.set(marker='.', color='#e7298a', alpha=0.5, markersize=3)
+        pass
 
     for idx, patch in enumerate(bp['boxes']):
         if idx == 0:
@@ -217,32 +237,127 @@ def calc(data):
     pass
 
 
+def high_low_deg(el: [], verts: int):
+    deg = [int(0) for _ in range(verts)]
+    low_deg = []
+    high_deg = []
+    for ed in el:
+        deg[ed[0]] += 1
+        deg[ed[1]] += 1
+        pass
+    max = 0
+    for idx, deg in enumerate(deg):
+        if deg > max:
+            max = deg
+            pass
+        if deg > 20:
+            high_deg.append(idx)
+            pass
+        elif deg > 10:
+            low_deg.append(idx)
+            pass
+        pass
+    print("Max: " + str(max))
+    return low_deg, high_deg
+
+
+def edge_list(lines):
+    el = []
+    lines.__delitem__(-1)
+    for from_node, line in enumerate(lines):
+        line = line.rstrip()
+        line = line.split("\t")
+        for to_node in line:
+            if to_node != '':
+                if [from_node, int(to_node)] not in el:
+                    if [int(to_node), from_node] not in el:
+                        if from_node < int(to_node):
+                            el.append([from_node, int(to_node)])
+                        else:
+                            el.append([int(to_node), from_node])
+                        pass
+                    pass
+                pass
+            pass
+        pass
+
+    edge_lists = []
+    for d in el:
+        if d not in edge_lists:
+            edge_lists.append(d)
+            pass
+        pass
+    return edge_lists
+
+
+def make_graph(el: [], low_deg: [], high_deg: [], out_file: str, verts: int):
+    g = Graph(engine='sfdp')
+    e_cout = 0
+
+    g.graph_attr.update(dpi='1000', size="10,10", outputorder='edgesfirst', overlap='false', splines='true')
+    g.node_attr.update(color='black', shape='point', width='0.02', height='0.02')
+    g.edge_attr.update(color='black', penwidth='0.2')
+    for n in range(verts):
+        if n == 0:
+            if n in low_deg:
+                g.node(str(n), label=str(n), color='red', width='0.03', height='0.03')
+                pass
+            elif n in high_deg:
+                g.node(str(n), label=str(n), color='red', width='0.04', height='0.04')
+                pass
+            else:
+                g.node(str(n), label=str(n), color='red')
+                pass
+        elif n in low_deg:
+            g.node(str(n), label=str(n), width='0.03', height='0.03')
+        elif n in high_deg:
+            g.node(str(n), label=str(n), width='0.04', height='0.04')
+        else:
+            g.node(str(n), label=str(n))
+        pass
+
+    for idx, d in enumerate(el):
+        if d[0] < d[1]:
+            g.edge(str(d[0]), str(d[1]), color='black')
+            e_cout += 1
+            pass
+        pass
+    print("Edges: " + str(e_cout))
+    g.render(filename=out_file, directory=outp, cleanup=True, format='png')
+
+    # g.save(filename=out_file, directory=outp, format='png')
+    pass
+
+
 def main():
     print("START")
     folders = []
-    mode = ["EL", "ES"]
-    inits = ["08", "16", "24", "32"]
-    probs = ["0.0025", "0.0050", "0.0075", "0.0100"]
-    edits = ["04-12", "12-20", "20-28", "28-36"]
+    mode = ["EL"]
+    inits = ["32", "24", "16"]
+    probs = ["0.0100"]
+    edits = ["04-12", "12-20", "20-28"]
     folds = []
     x_lbl = []
-    plt.style.use("seaborn-dark")
+    # plt.style.use("seaborn-dark")
 
     for mi, m in enumerate(mode):
         idx = 1
         m_root = inp + "Output - " + m
         folds.append(m_root + " Base/")
         m_root = m_root + " 050P, "
-        x_ls = ["0 (No Variants)"]
+        x_ls = ["Baseline"]
         for ii, i in enumerate(inits):
             i_root = m_root + i + "I, "
-            xli_root = str(int(i)) + ", "
+            # xli_root = str(int(i)) + ", "
+            # xli_root = ""
+            xli_root = i + ", "
             for pi, p in enumerate(probs):
                 p_root = i_root + p + "%, "
-                xl = xli_root + str(format(float(p) * 100, '.2f')) + "%, "
+                # xl = xli_root + str(format(float(p) * 100, '.2f')) + "%, "
+                xl = xli_root
                 for ei, e in enumerate(edits):
                     folds.append(p_root + e + "E/")
-                    x_ls.append(str(idx) + " (" + xl + e + ")")
+                    x_ls.append(xl + e)
                     idx += 1
                     pass
                 pass
@@ -296,50 +411,68 @@ def main():
         vars_len.append(exp_vars)
         pass
 
-    for fold in all_data[1]:
-        mean_spread = []
-        f_best_spread = []
-        net_edges = []
-        exp_vars = []
-        for run in fold:
-            mean_spread.append(run[1])
-            run_epi_spread = []
-            for prf in run[2]:
-                run_epi_spread.append(sum(prf[2]))
-                pass
-            exp_vars.append(len(run[2]))
-            f_best_spread.append(sum(run_epi_spread))
-            net_edges.append(run[4])
-            pass
-        avg_spread.append(mean_spread)
-        best_spread.append(f_best_spread)
-        num_edges_spread.append(net_edges)
-        vars_spd.append(exp_vars)
-        pass
+    # for fold in all_data[1]:
+    #     mean_spread = []
+    #     f_best_spread = []
+    #     net_edges = []
+    #     exp_vars = []
+    #     for run in fold:
+    #         mean_spread.append(run[1])
+    #         run_epi_spread = []
+    #         for prf in run[2]:
+    #             run_epi_spread.append(sum(prf[2]))
+    #             pass
+    #         exp_vars.append(len(run[2]))
+    #         f_best_spread.append(sum(run_epi_spread))
+    #         net_edges.append(run[4])
+    #         pass
+    #     avg_spread.append(mean_spread)
+    #     best_spread.append(f_best_spread)
+    #     num_edges_spread.append(net_edges)
+    #     vars_spd.append(exp_vars)
+    #     pass
 
-    titles = ["Epidemic Duration", "Epidemic Spread", "Best Epidemic Duration", "Best Epidemic Spread",
-              "Network Edges with Epidemic Duration", "Network Edges with Epidemic Spread",
-              "Number of Variants with Epidemic Duration", "Number of Variants with Epidemic Spread"]
-    names = ["EL_boxplot", "ES_boxplot", "EL_best_boxplot", "ES_best_boxplot", "EL_edges_boxplot",
-             "ES_edges_boxplot", "EL_variants_boxplot", "ES_variants_boxplot"]
+    # titles = ["Epidemic Duration", "Epidemic Spread", "Best Epidemic Duration", "Best Epidemic Spread",
+    #           "Network Edges with Epidemic Duration", "Network Edges with Epidemic Spread",
+    #           "Number of Variants with Epidemic Duration", "Number of Variants with Epidemic Spread"]
+    # names = ["EL_boxplot", "ES_boxplot", "EL_best_boxplot", "ES_best_boxplot", "EL_edges_boxplot",
+    #          "ES_edges_boxplot", "EL_variants_boxplot", "ES_variants_boxplot"]
+    # data = [avg_len, avg_spread, best_len, best_spread, num_edges_len, num_edges_spread,
+    #         vars_len, vars_spd]
+    # lbls = [x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1]]
+    # xsp = [[i for i in range(len(all_data[0]))], [i for i in range(len(all_data[1]))]]
+    # xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
+    # ylb = ["Fitness", "Fitness", "Best Fitness", "Best Fitness", "Number of Edges", "Number of Edges",
+    #        "Number of Variants", "Number of Variants"]
+    # xlb = ["Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)",
+    #        "Parameter Setting (New Variant Probability, New Variant Edits)"]
+
+    titles = ["Epidemic Duration with 1.00% Variant Probability"]
+    names = ["EL_Extra_boxplot"]
     data = [avg_len, avg_spread, best_len, best_spread, num_edges_len, num_edges_spread,
             vars_len, vars_spd]
-    lbls = [x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1], x_lbl[0], x_lbl[1]]
-    xsp = [[i for i in range(len(all_data[0]))], [i for i in range(len(all_data[1]))]]
-    xpos = [xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1], xsp[0], xsp[1]]
+    lbls = [x_lbl[0]]
+    xsp = [[i for i in range(len(all_data[0]))]]
+    xpos = [xsp[0]]
     ylb = ["Fitness", "Fitness", "Best Fitness", "Best Fitness", "Number of Edges", "Number of Edges",
            "Number of Variants", "Number of Variants"]
-    xlb = ["Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)",
-           "Experiment (Initial Variant Bits, New Variant Probability, New Variant Edits)"]
+    xlb = ["Parameter Setting (Initial Variant Bits, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)",
+           "Parameter Setting (New Variant Probability, New Variant Edits)"]
 
     lxpos = [0.5]
-    for i in range(4, len(all_data[0]) - 4, 4):
+    for i in range(3, len(all_data[0]) - 3, 3):
         lxpos.append(i + 0.5)
         pass
 
@@ -349,7 +482,7 @@ def main():
 
         f = plt.figure()
         f.set_dpi(900)
-        f.set_figheight(4)
+        f.set_figheight(6)
         f.set_figwidth(8)
 
         plot = f.add_subplot(111)
@@ -381,7 +514,7 @@ def main():
             mean_inf, best_inf = inf_data(data)
             f = plt.figure()
             f.set_dpi(600)
-            f.set_figheight(4)
+            f.set_figheight(6)
             f.set_figwidth(8)
 
             plot = f.add_subplot(111)
@@ -398,8 +531,10 @@ def main():
             for idx in range(len(profs)):
                 if idx == 0:
                     lbl = profs[idx][3]
+                    pass
                 else:
                     lbl = profs[idx][3]
+                    pass
                 plot.plot(ys[idx], xs[idx], label=lbl)
                 pass
 
@@ -419,12 +554,16 @@ def main():
             plot.grid(visible="True", axis="x", which='minor', color="darkgray", linewidth=0.5)
             plot.grid(visible="True", axis="x", which='major', color="black", linewidth=0.5)
             plot.grid(visible="True", axis="y", which='major', color="black", linewidth=0.5)
-            plt.legend(title="Variant ID (Parent)", borderaxespad=0, bbox_to_anchor=(1, 0.5),
+            plt.legend(title="Variant ID (Parent)", borderaxespad=0.1, bbox_to_anchor=(1, 0.5),
                        loc="center left", fontsize=8, title_fontsize=8)
             f.tight_layout()
             f.savefig(outp + mode[fidx] + "_EXP" + str(didx) + "_profile.png", dpi=600)
             plt.close()
             write_best(data, x_lbl[fidx][didx], outp + mode[fidx] + "_EXP" + str(didx) + "_best.dat")
+            # print("From File: " + str(data[0][4]))
+            # el = edge_list(data[0][5])
+            # low_deg, high_deg = high_low_deg(el, 256)
+            # make_graph(el, low_deg, high_deg, mode[fidx] + "_EXP" + str(didx) + "_graph", 256)
             pass
         pass
 

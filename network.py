@@ -26,8 +26,8 @@ def loadData(fName):
 
 
 def makeGraph():
-    inp_file = "Output/EXP1_graph.dat"
-    out_file = "outGraph0"
+    inp_file = "Input/initGraph.dat"
+    out_file = "James"
     data = loadData(inp_file)
 
     g = Graph(engine='sfdp')
