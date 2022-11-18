@@ -123,7 +123,7 @@ def make_graph(el: [], ec: [], low_deg: [], high_deg: [], out_file: str, verts: 
 def main():
     # nodes = [256, 512, 768, 1024]
     # nodes = [256]
-    finames = ["512N_graph3", "512N_graph3strictgen3rem50_599781graph", "512a_random50graph", "512a_random70graph"]
+    finames = ["lockdown_graph0"]
     for fi in finames:
         el, ec = edge_list("Input/" + fi + ".dat")
         low_deg, high_deg = high_low_deg(el, 512)
