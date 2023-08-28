@@ -1,32 +1,35 @@
 import random
+from random import randint
 
 from graphviz import Graph
 
 states = 5
-edges = [[1, 2], [4, 3], [4, 2], [0, 1], [3, 0]]
+states = ['1', '2', '3']
+edges = [[1, 1, 2, 2], [0, 2, 2, 2], [0, 0, 0, 1]]
+characters = ['A', 'C', 'G', 'T']
 
 
 def main():
-    random.seed(5321)
+    random.seed(553)
     f = Graph(engine="dot")
     f.graph_attr.update(dpi="600", size="3,3", overlap="false", splines="true", rankdir="LR")
-    f.node_attr.update(shape="circle", fixedsize='true', height="0.5", width="0.5")
-    f.edge_attr.update(dir="forward", aarowhead="normal", arrowsize="0.75", minlen="1")
+    f.node_attr.update(shape="square", fixedsize='true', height="0.5", width="0.5")
+    f.edge_attr.update(dir="forward", aarowhead="normal", arrowsize="0.5", minlen="1")
 
-    for n in range(states):
-        s = random.randint(1, 2)
-        b = ""
-        for _ in range(s):
-            b += str(random.randint(0, 1))
-        f.node(str(n), label=b)
+    for idx, st in enumerate(states):
+        f.node(str(idx), label=st)
         pass
 
     f.node(str(states), label="", shape="none", height="0.0", width="0.0")
-    f.edge(str(states), "0")
+    f.edge(str(states), "0", label=str(characters[0]))
 
-    for n in range(states):
-        for i in range(2):
-            f.edge(str(n), str(edges[n][i]), label=str(" " + str(i)))
+    for n in range(len(states)):
+        for i in range(len(characters)):
+            trans = ""
+            for j in range(randint(1, 2)):
+                trans += str(characters[randint(0, 3)])
+                pass
+            f.edge(str(n), str(edges[n][i]), label=str(str(characters[i]) + "/" + trans))
             pass
         pass
 
